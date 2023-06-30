@@ -3,14 +3,14 @@ import { ObjectId } from "mongodb";
 export class Usuario{
     nombre: String;
     apellido: String;
-    DNI: Number;
+    DNI: String;
     fechaNac: Date;
     fotoDoc: String;
     mail: String;
     contraseña: String;
     estado: String;
 
-    constructor(contraseña: String, nombre: String, mail: String, DNI: Number,
+    constructor(contraseña: String, nombre: String, mail: String, DNI: String,
         fechaNac: Date, estado: String, apellido: String, fotoDoc: String){
         this.contraseña = contraseña;
         this.nombre = nombre;
