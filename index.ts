@@ -1,6 +1,7 @@
 import express from "express";
 import { rutasUsuarios } from "./Rutas/rutasUsuarios";
-import bodyParser from 'body-parser';
+const multer = require('multer');
+const upload = multer();
 
 const app = express();
 
@@ -10,4 +11,4 @@ app.get("", (req, res) => res.send("Bienvenido a mi api"));
 
 app.listen(puerto, () => console.log("Escuchando en el puerto: " + puerto));
 
-app.use("/usuarios", bodyParser.json(),rutasUsuarios);
+app.use("/usuarios", upload.none(), rutasUsuarios);
