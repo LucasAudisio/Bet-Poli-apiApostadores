@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { MongoClient } from "mongodb";
 import { AccesoUsuario } from "../accesosBases/accesoUsuario";
+import { generarClaveInv, verificarClaveAdmin } from '../jwt';
 import { Usuario } from "../Clases/Usuario";
 
 //Regex
@@ -18,49 +19,67 @@ var accesoUsuario: AccesoUsuario = new AccesoUsuario(url, database, database.col
 
 rutasUsuarios.post("/registro", (req, res) => {
     const usuario: Usuario = new Usuario(req.body.contraseña, req.body.nombre, req.body.mail,
-        req.body.DNI, new Date(req.body.fechaNac), "pendiente", req.body.apellido, 
+        req.body.DNI, new Date(req.body.fechaNac), "pendiente", req.body.apellido,
         req.body.fotoDoc);
 
-    if(!mailRegex.test(usuario.mail.valueOf())){
+    if (!mailRegex.test(usuario.mail.valueOf())) {
         res.status(400).send("Mail invalido");
         return;
     }
 
-    if(usuario.DNI.length != 8){
+    if (usuario.DNI.length != 8) {
         res.status(400).send("DNI invalido");
         return;
     }
 
-    if(usuario.contraseña.length < 8 || !contraRegex.test(usuario.contraseña.valueOf())){
+    if (usuario.contraseña.length < 8 || !contraRegex.test(usuario.contraseña.valueOf())) {
         res.status(400).send("Contraseña insegura");
         return;
     }
 
-    if(!fotoRegex.test(usuario.fotoDoc.valueOf())){
+    if (!fotoRegex.test(usuario.fotoDoc.valueOf())) {
         res.status(400).send("Imagen invalida");
         return;
     }
-    
+
     accesoUsuario.getUsuario(usuario.DNI).then((v) => {
-        if(v == undefined){
+        if (v == undefined) {
             accesoUsuario.getUsuario(usuario.mail.valueOf()).then((v) => {
-                if(v == undefined){
+                if (v == undefined) {
                     accesoUsuario.subirDatos(usuario);
                     res.send(usuario);
                 }
-                else{
+                else {
                     res.status(400).send("Mail ya en uso");
                 }
             })
         }
-        else{
+        else {
             res.status(400).send("DNI ya en uso");
         }
     })
 })
 
-rutasUsuarios.post("/inicoSesion", (req, res) => {
-
+rutasUsuarios.post("/inicioSesion", (req, res) => {
+    accesoUsuario.getUsuario(req.body.mail).then((b) => {
+        if (b) {
+            accesoUsuario.login(req.body.mail, req.body.contraseña).then((v) => {
+                if (v) {
+                    if (v.estado) {
+                        let respuesta: JSON = JSON.parse(JSON.stringify(b));
+                        Object.assign(respuesta, { "claveJWT": generarClaveInv(req.body.mail) });
+                        res.json(respuesta);
+                    }
+                    else if(v.mensaje == "contraseña incorrecta") {
+                        res.status(400).json(v);
+                    }
+                    else{
+                        res.status(400).json(v)
+                    }
+                }
+            });
+        }
+    })
 })
 
 rutasUsuarios.delete("/borrarPendiente/:nombre", (req, res) => {
