@@ -60,24 +60,24 @@ rutasUsuarios.post("/registro", (req, res) => {
     })
 })
 
-rutasUsuarios.post("/inicoSesion", (req, res) => {
+rutasUsuarios.post("/inicioSesion", (req, res) => {
     accesoUsuario.getUsuario(req.body.mail).then((b) => {
         if (b) {
             accesoUsuario.login(req.body.mail, req.body.contraseña).then((v) => {
                 if (v) {
-                    if (v == "todo bien") {
+                    if (v.estado) {
                         let respuesta: JSON = JSON.parse(JSON.stringify(b));
                         Object.assign(respuesta, { "claveJWT": generarClaveInv(req.body.mail) });
                         res.json(respuesta);
                     }
-                    else {
+                    else if(v.mensaje == "contraseña incorrecta") {
                         res.status(400).json(v);
+                    }
+                    else{
+                        res.status(400).json(v)
                     }
                 }
             });
-        }
-        else {
-            res.status(404).json("usuario no encontrado");
         }
     })
 })

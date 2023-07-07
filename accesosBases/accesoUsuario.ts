@@ -26,17 +26,27 @@ export class AccesoUsuario {
 
     public async login(mail: string, contraseña: string) {
         const v = await this.getUsuario(mail);
+        const response = {
+            estado: false,
+            mensaje: ""
+        }
 
         if (v != undefined) {
             if (v.contraseña == sha256(contraseña)) {
-                return "todo bien";
+                response.estado = true
+                response.mensaje = "todo bien"
+                return response;
             }
             else {
-                return "contraseña incorrecta";
+                response.estado = false
+                response.mensaje = "contraseña incorrecta"
+                return response;
             }
         }
         else {
-            return "usuario no encontrado";
+            response.estado = false
+            response.mensaje = "Usuario no encontrado"
+            return response;
         }
     }
 
