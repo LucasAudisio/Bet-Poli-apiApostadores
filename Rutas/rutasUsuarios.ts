@@ -4,12 +4,13 @@ import { AccesoUsuario } from "../accesosBases/accesoUsuario";
 import { AccesoVerify } from "../accesosBases/accesoVerify";
 import { Usuario } from "../Clases/Usuario";
 import { generarClave } from "../jwt";
+import bodyParser from 'body-parser';
 const otpGenerator = require('otp-generator');
 const nodemailer = require('nodemailer');
 
 //Regex
 const mailRegex: RegExp = new RegExp("[A-Za-z0-9]+@[a-z]+\.[a-z]{2,3}");
-const contraRegex: RegExp = new RegExp("[a-z0-9A-Z]");
+const contraRegex: RegExp = new RegExp("^(?=.*[A-Z])(?=.*[0-9]).{8,}$");
 const fotoRegex: RegExp = new RegExp("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$");
 
 export let rutasUsuarios = Router();
@@ -46,13 +47,12 @@ function sendMail(to: String, subject: String, text: String){
     })
 }
 
-rutasUsuarios.post("/registro", (req, res) => {
+rutasUsuarios.post("/registro", bodyParser.json(), (req, res) => {
     if(!req.body.contraseña || !req.body.nombre || !req.body.mail || !req.body.DNI
-         || !req.body.fechaNac || !req.body.apellido /*|| !req.body.fotoDoc*/){
+         || !req.body.fechaNac || !req.body.apellido || !req.body.fotoDoc){
             res.status(400).send("No se proporcionaron todos los datos");
             return;
     }
-
     const usuario: Usuario = new Usuario(req.body.contraseña, req.body.nombre, req.body.mail,
         req.body.DNI, new Date(req.body.fechaNac), "pendiente", req.body.apellido, 
         req.body.fotoDoc);
@@ -67,15 +67,15 @@ rutasUsuarios.post("/registro", (req, res) => {
         return;
     }
 
-    if(usuario.contraseña.length < 8 || !contraRegex.test(usuario.contraseña.valueOf())){
+    if(!contraRegex.test(usuario.contraseña.valueOf())){
         res.status(400).send("Contraseña insegura");
         return;
     }
 
-    /*if(!fotoRegex.test(usuario.fotoDoc.valueOf())){
+    if(!fotoRegex.test(usuario.fotoDoc.valueOf())){
         res.status(400).send("Imagen invalida");
         return;
-    }*/
+    }
     
     accesoUsuario.getUsuario(usuario.DNI).then((v) => {
         if(v == undefined){
@@ -126,7 +126,7 @@ rutasUsuarios.post("/verify", (req, res) => {
 
 rutasUsuarios.post("/inicioSesion", (req, res) => {
     accesoUsuario.getUsuario(req.body.mail).then((b) => {
-        if (b) {
+        if (b && b.estado == "activo") {
             accesoUsuario.login(req.body.mail, req.body.contraseña).then((v) => {
                 if (v) {
                     if (v.estado) {
@@ -142,6 +142,9 @@ rutasUsuarios.post("/inicioSesion", (req, res) => {
                     }
                 }
             });
+        }
+        else{
+            res.status(400).send("cuenta no activada");
         }
     })
 })
